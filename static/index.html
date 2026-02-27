@@ -245,10 +245,40 @@
       const d = document.createElement('div'); d.textContent = t; return d.innerHTML;
     }
 
+    function renderBotText(text) {
+      let html = escapeHtml(text);
+
+      // Markdown links: [label](https://...)
+      html = html.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+
+      // Raw URLs
+      html = html.replace(
+        /(https?:\/\/[^\s<]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+
+      // Bold text
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // Lightweight cleanup for heading markers
+      html = html.replace(/^###\s+/gm, '');
+      html = html.replace(/^##\s+/gm, '');
+      html = html.replace(/^#\s+/gm, '');
+
+      // Preserve line breaks
+      html = html.replace(/\n/g, '<br>');
+
+      return html;
+    }
+
     function addMessage(text, sender) {
       const div = document.createElement('div');
       div.className = 'msg ' + sender;
-      div.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div><span class="msg-time">${timeStr()}</span>`;
+      const bubble = sender === 'bot' ? renderBotText(text) : escapeHtml(text);
+      div.innerHTML = `<div class="msg-bubble">${bubble}</div><span class="msg-time">${timeStr()}</span>`;
       messagesEl.insertBefore(div, typingEl);
       scrollToBottom();
     }
