@@ -17,7 +17,7 @@ Run with:
 
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -101,6 +101,11 @@ def root():
 @app.get("/health", response_model=HealthResponse, tags=["Info"])
 def health_check():
     return HealthResponse(status="ok", message="Bot is running")
+
+
+@app.head("/health", tags=["Info"])
+def health_check_head():
+    return Response(status_code=200)
 
 
 @app.post("/chat", response_model=ChatResponse, tags=["Chat"])
