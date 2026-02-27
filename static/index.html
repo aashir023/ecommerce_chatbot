@@ -247,18 +247,26 @@
 
     function renderBotText(text) {
       let html = escapeHtml(text);
+      const linkTokens = [];
 
       // Markdown links: [label](https://...)
       html = html.replace(
         /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+        (_, label, url) => {
+          const token = `__MD_LINK_${linkTokens.length}__`;
+          linkTokens.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+          return token;
+        }
       );
 
       // Raw URLs
       html = html.replace(
-        /(https?:\/\/[^\s<]+)/g,
+        /(https?:\/\/[^\s<)"']+)/g,
         '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
       );
+
+      // Restore markdown links after raw URL linkification to avoid nested anchors
+      html = html.replace(/__MD_LINK_(\d+)__/g, (_, i) => linkTokens[Number(i)] || '');
 
       // Bold text
       html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
