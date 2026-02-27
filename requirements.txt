@@ -1,0 +1,30 @@
+# ==========================================
+# Phase 1: Web Scraping & Data Processing
+# ==========================================
+requests==2.31.0
+beautifulsoup4==4.12.3
+playwright==1.42.0
+pandas==2.2.1
+
+# ==========================================
+# Phase 2 & 3: LLMs, Embeddings & RAG
+# ==========================================
+openai==1.14.2
+langchain==0.1.13
+langchain-openai==0.1.1
+langchain-community==0.0.29
+tiktoken==0.6.0
+
+# ==========================================
+# Phase 4: Vector Databases
+# ==========================================
+pinecone-client==3.2.2
+chromadb==0.4.24
+
+# ==========================================
+# Phase 5: Backend / API Server
+# ==========================================
+fastapi==0.110.0
+uvicorn==0.29.0
+python-dotenv==1.0.1
+pydantic==2.6.4
