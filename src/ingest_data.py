@@ -37,6 +37,79 @@ def strip_html(html: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def parse_spec_pairs(product: dict) -> list[tuple[str, str]]:
+    """
+    Extract product specs as key/value pairs from description HTML and tags.
+    """
+    pairs: list[tuple[str, str]] = []
+    seen: set[str] = set()
+
+    description_html = product.get("description_html", "") or ""
+    for li_html in re.findall(r"<li[^>]*>(.*?)</li>", description_html, flags=re.I | re.S):
+        item_text = strip_html(li_html)
+        if not item_text:
+            continue
+        # Expected format is usually "Key: Value"
+        if ":" in item_text:
+            key, value = item_text.split(":", 1)
+        else:
+            key, value = "Detail", item_text
+        key = re.sub(r"\s+", " ", key).strip(" -")
+        value = re.sub(r"\s+", " ", value).strip(" -")
+        if not key or not value:
+            continue
+        dedupe_key = f"{key.lower()}::{value.lower()}"
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        pairs.append((key, value))
+
+    # Tags often contain extra spec-like fields, e.g. "Capacity_1.5 Ton"
+    for raw_tag in product.get("tags", []) or []:
+        tag = str(raw_tag).strip()
+        if not tag:
+            continue
+        if "_" in tag:
+            key, value = tag.split("_", 1)
+            key = key.strip()
+            value = value.strip()
+        else:
+            key, value = "Tag", tag
+        if not key or not value:
+            continue
+        dedupe_key = f"{key.lower()}::{value.lower()}"
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        pairs.append((key, value))
+
+    return pairs
+
+
+def build_specs_summary(spec_pairs: list[tuple[str, str]], max_chars: int = 1800) -> str:
+    """Build a compact single-line summary for Pinecone metadata/context."""
+    if not spec_pairs:
+        return ""
+    chunks: list[str] = []
+    total = 0
+    for key, value in spec_pairs:
+        part = f"{key}: {value}"
+        new_total = total + len(part) + (3 if chunks else 0)
+        if new_total > max_chars:
+            break
+        chunks.append(part)
+        total = new_total
+    return " | ".join(chunks)
+
+
+def first_spec_value(spec_pairs: list[tuple[str, str]], key_regex: str) -> str:
+    """Return the first spec value whose key matches key_regex."""
+    for key, value in spec_pairs:
+        if re.search(key_regex, key, flags=re.I):
+            return value
+    return ""
+
+
 def product_to_text(product: dict) -> str:
     """
     Convert a product dict into a single descriptive text string.
@@ -61,11 +134,10 @@ def product_to_text(product: dict) -> str:
 
     parts.append(f"Availability: {product.get('availability', 'Unknown')}")
 
-    # Tags carry structured specs like "Capacity_1.5 Ton", "Type_Inverter"
-    tags = product.get("tags", [])
-    if tags:
-        readable_tags = [t.replace("_", ": ") for t in tags]
-        parts.append(f"Specifications: {', '.join(readable_tags)}")
+    spec_pairs = parse_spec_pairs(product)
+    specs_summary = build_specs_summary(spec_pairs, max_chars=2500)
+    if specs_summary:
+        parts.append(f"Specifications: {specs_summary}")
 
     # Variants (sizes/colours with prices)
     variants = product.get("variants", [])
@@ -100,6 +172,10 @@ def build_metadata(product: dict) -> dict:
     """
     variants = product.get("variants", [])
     first_variant = variants[0] if variants else {}
+    spec_pairs = parse_spec_pairs(product)
+    specs_summary = build_specs_summary(spec_pairs)
+    model = first_spec_value(spec_pairs, r"\bmodel\b")
+    warranty = first_spec_value(spec_pairs, r"\bwarranty\b")
 
     return {
         "doc_type":   "product",
@@ -113,6 +189,9 @@ def build_metadata(product: dict) -> dict:
         "discount":   product.get("discount") or "",
         "availability": product.get("availability", ""),
         "sku":        first_variant.get("sku") or "",
+        "model":      model,
+        "warranty":   warranty,
+        "specs_summary": specs_summary,
         "url":        product.get("url", ""),
         "image":      (product.get("images") or [""])[0],
     }

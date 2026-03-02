@@ -136,6 +136,12 @@ def format_products_for_context(products: list[dict]) -> str:
 
         if p.get("sku"):
             lines.append(f"SKU:          {p['sku']}")
+        if p.get("model"):
+            lines.append(f"Model:        {p['model']}")
+        if p.get("warranty"):
+            lines.append(f"Warranty:     {p['warranty']}")
+        if p.get("specs_summary"):
+            lines.append(f"Key Specs:    {p['specs_summary']}")
 
         lines.append(f"URL:          {p.get('url', '')}")
         lines.append("")   # blank line between products
