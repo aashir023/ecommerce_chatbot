@@ -102,6 +102,7 @@ def build_metadata(product: dict) -> dict:
     first_variant = variants[0] if variants else {}
 
     return {
+        "doc_type":   "product",
         "product_id": str(product.get("id", "")),
         "handle":     product.get("handle", ""),
         "name":       product.get("name", "")[:200],      # Pinecone has metadata size limits

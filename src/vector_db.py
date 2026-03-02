@@ -44,6 +44,42 @@ def embed_query(query: str) -> list[float]:
     return response.data[0].embedding
 
 
+def _combine_filters(base_filter: dict, extra_filter: dict | None) -> dict:
+    if not extra_filter:
+        return base_filter
+    return {"$and": [base_filter, extra_filter]}
+
+
+def _search_by_doc_type(
+    query: str,
+    doc_type: str,
+    top_k: int = TOP_K_RESULTS,
+    filters: dict | None = None,
+) -> list[dict]:
+    query_embedding = embed_query(query)
+    index = get_pinecone_index()
+
+    query_kwargs = {
+        "vector": query_embedding,
+        "top_k": top_k,
+        "include_metadata": True,
+        "filter": _combine_filters(
+            {"doc_type": {"$eq": doc_type}},
+            filters,
+        ),
+    }
+
+    results = index.query(**query_kwargs)
+
+    records = []
+    for match in results.get("matches", []):
+        meta = match.get("metadata", {})
+        meta["score"] = round(match.get("score", 0), 4)
+        records.append(meta)
+
+    return records
+
+
 def search_products(query: str, top_k: int = TOP_K_RESULTS, filters: dict = None) -> list[dict]:
     """
     Embed the query and retrieve the top_k most similar products from Pinecone.
@@ -57,26 +93,22 @@ def search_products(query: str, top_k: int = TOP_K_RESULTS, filters: dict = None
     Returns:
         List of product metadata dicts, ordered by relevance.
     """
-    query_embedding = embed_query(query)
-    index = get_pinecone_index()
+    return _search_by_doc_type(
+        query=query,
+        doc_type="product",
+        top_k=top_k,
+        filters=filters,
+    )
 
-    query_kwargs = {
-        "vector": query_embedding,
-        "top_k": top_k,
-        "include_metadata": True,
-    }
-    if filters:
-        query_kwargs["filter"] = filters
 
-    results = index.query(**query_kwargs)
-
-    products = []
-    for match in results.get("matches", []):
-        meta = match.get("metadata", {})
-        meta["score"] = round(match.get("score", 0), 4)
-        products.append(meta)
-
-    return products
+def search_site_info(query: str, top_k: int = TOP_K_RESULTS, filters: dict = None) -> list[dict]:
+    """Retrieve non-product site information chunks (locations, policies, FAQs, etc.)."""
+    return _search_by_doc_type(
+        query=query,
+        doc_type="site_info",
+        top_k=top_k,
+        filters=filters,
+    )
 
 
 def format_products_for_context(products: list[dict]) -> str:
@@ -107,5 +139,29 @@ def format_products_for_context(products: list[dict]) -> str:
 
         lines.append(f"URL:          {p.get('url', '')}")
         lines.append("")   # blank line between products
+
+    return "\n".join(lines).strip()
+
+
+def format_site_info_for_context(records: list[dict]) -> str:
+    """
+    Convert site-information metadata records into a readable context block.
+    URLs are intentionally omitted here so the assistant doesn't over-link.
+    """
+    if not records:
+        return "No relevant store information found."
+
+    lines = []
+    for i, r in enumerate(records, 1):
+        lines.append(f"--- Info {i} ---")
+        lines.append(f"Type:  {(r.get('type') or 'general').replace('_', ' ').title()}")
+        lines.append(f"Title: {r.get('title', 'N/A')}")
+        if r.get("content_chunk"):
+            lines.append(f"Details: {r['content_chunk']}")
+        if r.get("published_at"):
+            lines.append(f"Published: {r['published_at'][:10]}")
+        if r.get("author"):
+            lines.append(f"Author: {r['author']}")
+        lines.append("")
 
     return "\n".join(lines).strip()

@@ -16,7 +16,12 @@ from collections import defaultdict
 from openai import OpenAI
 
 from src.config import OPENAI_API_KEY, CHAT_MODEL, TOP_K_RESULTS
-from src.vector_db import search_products, format_products_for_context
+from src.vector_db import (
+    search_products,
+    search_site_info,
+    format_products_for_context,
+    format_site_info_for_context,
+)
 
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -35,28 +40,23 @@ Air Conditioners, Refrigerators, LED TVs, Washing Machines, Microwaves, Air Frye
 Geysers, Kitchen Appliances, Deep Freezers, Water Dispensers, and more.
 
 Store Info:
-- Location 1: Gul Noor Market, Shop 15, Murree Rd, Rawalpindi, Pakistan
-- Location 2: Ajaib & Sons Plaza, Jinnah Ave, Block G, Blue Area, Islamabad, Pakistan
-- Phone / WhatsApp: +92 309 0040002
-- Email: info@japanelectronics.pk
-- Complaints: +92 304 1111984
-- Website: https://japanelectronics.com.pk
-- Delivery: All across Pakistan
-- Policy: 7-day replacement guarantee, secure payments
+- For locations, contact details, policies, delivery, and FAQs, use only the retrieved STORE CONTEXT.
 
 Your role:
 - Help customers find the right product for their needs and budget
 - Answer questions about prices, specs, availability, and brands
 - Recommend products based on the PRODUCT CONTEXT provided below
-- Always reply politely to greetings (e.g., hi, hello, salam) before continuing assistance
+- If the user greets you, respond politely once, then continue without repeating greetings in every reply.
 - Be concise but warm — like a knowledgeable salesperson
-- Always mention the product URL when recommending a specific item
+- Always mention the product URL when recommending a specific product
+- For store info (locations, policies, contact), answer directly from context without adding links unless the user explicitly asks for a link
 - If you don't know something or the product isn't in the context, say so honestly \
   and suggest the customer contact the store directly
 
 Important:
 - Prices are in Pakistani Rupees (Rs.)
 - Only recommend products that appear in the PRODUCT CONTEXT — do not invent products
+- For factual store details, rely on retrieved STORE CONTEXT instead of memory
 - If the customer asks about something not in the context, let them know and offer to help them find it
 """
 
@@ -77,21 +77,24 @@ def resolve_query_with_history(user_message: str, history: list[dict]) -> dict:
 
 Return STRICT JSON only:
 {{
-  "is_relevant": true,
+  "intent": "product",
   "is_followup": false,
   "standalone_query": "..."
 }}
 
 Rules:
+- intent must be one of: product, site_info, irrelevant.
 - standalone_query must be self-contained and retrieval-friendly.
 - Resolve follow-up references (e.g. "cheapest one", "that one") using history.
-- Greetings/salutations (e.g., hi, hello, salam, assalam o alaikum, good morning) are relevant and should set is_relevant=true.
-- Only set is_relevant=false for clearly off-domain requests unrelated to products/store support.
+- Greetings/salutations (e.g., hi, hello, salam, assalam o alaikum, good morning) should use intent=site_info.
+- For product/search/buy/price/spec queries use intent=product.
+- For locations, policies, delivery, FAQ, contact, complaints, and store/company info use intent=site_info.
+- Only use intent=irrelevant for clearly off-domain requests.
 - Output JSON only, no extra text.
 
 Example:
 Latest user message: "hi"
-Output: {{"is_relevant": true, "is_followup": false, "standalone_query": "greeting"}}
+Output: {{"intent": "site_info", "is_followup": false, "standalone_query": "greeting"}}
 
 History:
 {history_text}
@@ -113,14 +116,17 @@ Latest user message:
             if raw.startswith("json"):
                 raw = raw[4:].strip()
         data = json.loads(raw)
+        intent = str(data.get("intent", "product")).strip().lower()
+        if intent not in {"product", "site_info", "irrelevant"}:
+            intent = "product"
         return {
-            "is_relevant": bool(data.get("is_relevant", True)),
+            "intent": intent,
             "is_followup": bool(data.get("is_followup", False)),
             "standalone_query": (data.get("standalone_query") or user_message).strip(),
         }
     except Exception:
         return {
-            "is_relevant": True,
+            "intent": "product",
             "is_followup": False,
             "standalone_query": user_message,
         }
@@ -148,20 +154,26 @@ def generate_answer(user_message: str, user_id: str = "default") -> str:
 
     # 2. Resolve follow-ups into standalone retrieval query + relevance gating
     resolution = resolve_query_with_history(user_message, history)
-    if not resolution["is_relevant"]:
+    if resolution["intent"] == "irrelevant":
         assistant_reply = "I can only help with Japan Electronics products and store-related questions."
         _conversation_history[user_id].append({"role": "user", "content": user_message})
         _conversation_history[user_id].append({"role": "assistant", "content": assistant_reply})
         return assistant_reply
 
-    # 3. Retrieve relevant products using resolved query
+    # 3. Retrieve context based on resolved intent
     retrieval_query = resolution["standalone_query"]
-    products = search_products(query=retrieval_query, top_k=TOP_K_RESULTS)
-    product_context = format_products_for_context(products)
+    if resolution["intent"] == "site_info":
+        records = search_site_info(query=retrieval_query, top_k=TOP_K_RESULTS)
+        context_block = format_site_info_for_context(records)
+        context_title = "STORE CONTEXT (retrieved from website pages)"
+    else:
+        products = search_products(query=retrieval_query, top_k=TOP_K_RESULTS)
+        context_block = format_products_for_context(products)
+        context_title = "PRODUCT CONTEXT (retrieved from our catalogue)"
 
     # 4. Build the messages list for the API call
-    user_message_with_context = f"""PRODUCT CONTEXT (retrieved from our catalogue):
-{product_context}
+    user_message_with_context = f"""{context_title}:
+{context_block}
 
 ---
 Customer message: {user_message}"""
