@@ -22,6 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from src.modules.chat.router import router as chat_router
 from pydantic import BaseModel
+
 # ── App setup ─────────────────────────────────────────────────────────────────
 
 app = FastAPI(

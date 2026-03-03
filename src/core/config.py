@@ -26,3 +26,12 @@ if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY is not set in your .env file")
 if not PINECONE_API_KEY:
     raise ValueError("PINECONE_API_KEY is not set in your .env file")
+
+#--─ Supabase settings ─────────────────────────────────────────────────────────────
+SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+if not SUPABASE_URL:
+    raise ValueError("SUPABASE_URL is not set in your .env file")
+if not SUPABASE_SERVICE_ROLE_KEY:
+    raise ValueError("SUPABASE_SERVICE_ROLE_KEY is not set in your .env file")
