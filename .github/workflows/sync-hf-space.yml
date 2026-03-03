@@ -34,4 +34,5 @@ jobs:
           fi
 
           git remote add hf "https://${HF_USERNAME}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}"
-          git push --force hf main
+          git push --force hf HEAD:main
+
