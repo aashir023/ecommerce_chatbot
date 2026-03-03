@@ -20,6 +20,8 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from src.modules.complaints.router import router as complaints_router
 from src.modules.chat.router import router as chat_router
 from pydantic import BaseModel
 
@@ -40,18 +42,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the chat router with all its endpoints
+# Register routers for different modules
 app.include_router(chat_router)
+app.include_router(complaints_router)
+
 
 class HealthResponse(BaseModel):
     status: str
     message: str
 
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "japan-electronics-helper-main" / "dist"
+INDEX_HTML = FRONTEND_DIR / "index.html"
+
+app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="frontend-assets")
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
-INDEX_HTML = STATIC_DIR / "index.html"
 
 
 @app.get("/", tags=["UI"])
@@ -70,7 +76,6 @@ def root():
         "health": "/health",
     }
 
-
 @app.get("/health", response_model=HealthResponse, tags=["Info"])
 def health_check():
     return HealthResponse(status="ok", message="Bot is running")
@@ -79,3 +84,10 @@ def health_check():
 @app.head("/health", tags=["Info"])
 def health_check_head():
     return Response(status_code=200)
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def spa_fallback(full_path: str):
+    target = FRONTEND_DIR / full_path
+    if target.exists() and target.is_file():
+        return FileResponse(target)
+    return FileResponse(INDEX_HTML)

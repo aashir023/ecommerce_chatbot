@@ -1,0 +1,51 @@
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+export async function logComplaint(payload: {
+  invoiceNumber: string;
+  phone: string;
+  description: string;
+}) {
+  const res = await fetch(`${API_BASE}/complaints/log`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to log complaint");
+  return data;
+}
+
+export async function trackComplaint(payload: {
+  type: "invoice" | "phone" | "complaint";
+  identifier: string;
+}) {
+  const res = await fetch(`${API_BASE}/complaints/track`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to track complaint");
+  return data;
+}
+
+export async function sendChatMessage(payload: { user_id: string; message: string }) {
+  const res = await fetch(`${API_BASE}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to send message");
+  return data; // { user_id, reply, message_count, ... }
+}
+
+export async function clearChatHistory(userId: string) {
+  const res = await fetch(`${API_BASE}/chat/history/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to clear chat history");
+  return data;
+}

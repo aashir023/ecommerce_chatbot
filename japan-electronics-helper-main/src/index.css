@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 220 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 12%;
+
+    --primary: 236 56% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 30% 12%;
+
+    --muted: 220 15% 94%;
+    --muted-foreground: 220 10% 50%;
+
+    --accent: 236 56% 38%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 88%;
+    --input: 220 15% 88%;
+    --ring: 236 56% 38%;
+
+    --radius: 0.75rem;
+
+    /* Chat-specific tokens */
+    --chat-bg: 220 25% 96%;
+    --chat-header: 236 56% 38%;
+    --chat-header-foreground: 0 0% 100%;
+    --chat-bubble-user: 236 56% 38%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 0 0% 100%;
+    --chat-bubble-bot-foreground: 220 30% 12%;
+    --chat-input-bg: 0 0% 100%;
+    --chat-quick-action: 236 56% 96%;
+    --chat-quick-action-foreground: 236 56% 38%;
+    --chat-quick-action-hover: 236 56% 90%;
+    --chat-fab: 236 56% 38%;
+    --chat-fab-foreground: 0 0% 100%;
+    --chat-success: 142 60% 45%;
+    --chat-success-foreground: 0 0% 100%;
+    --chat-warning: 38 92% 50%;
+    --chat-warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 220 30% 8%;
+    --foreground: 220 10% 92%;
+
+    --card: 220 25% 12%;
+    --card-foreground: 220 10% 92%;
+
+    --popover: 220 25% 12%;
+    --popover-foreground: 220 10% 92%;
+
+    --primary: 217 85% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 220 10% 92%;
+
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 10% 55%;
+
+    --accent: 217 85% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 217 85% 55%;
+
+    --chat-bg: 220 25% 10%;
+    --chat-header: 220 40% 8%;
+    --chat-header-foreground: 0 0% 100%;
+    --chat-bubble-user: 217 85% 50%;
+    --chat-bubble-user-foreground: 0 0% 100%;
+    --chat-bubble-bot: 220 25% 16%;
+    --chat-bubble-bot-foreground: 220 10% 92%;
+    --chat-input-bg: 220 25% 14%;
+    --chat-quick-action: 217 50% 18%;
+    --chat-quick-action-foreground: 217 85% 70%;
+    --chat-quick-action-hover: 217 50% 25%;
+    --chat-fab: 217 85% 50%;
+    --chat-fab-foreground: 0 0% 100%;
+    --chat-success: 142 60% 40%;
+    --chat-success-foreground: 0 0% 100%;
+    --chat-warning: 38 80% 45%;
+    --chat-warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Noto Sans', sans-serif;
+  }
+}
+
+/* Chat widget animations */
+@keyframes chat-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chat-slide-down {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+@keyframes chat-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes chat-fab-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 20px hsl(236 56% 38% / 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 30px hsl(236 56% 38% / 0.6);
+  }
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
