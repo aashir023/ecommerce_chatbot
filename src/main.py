@@ -95,13 +95,20 @@ def root():
     }
 
 @app.get("/health", response_model=HealthResponse, tags=["Info"])
-def health_check():
+def health_check(response: Response):
+    print("[HEALTH_HIT] endpoint executed", flush=True)
+    response.headers["x-build-id"] = "2026-03-04-logtest-1"
     return HealthResponse(status="ok", message="Bot is running")
 
 
 @app.head("/health", tags=["Info"])
 def health_check_head():
-    return Response(status_code=200)
+    print("[HEALTH_HEAD_HIT] endpoint executed", flush=True)
+    return Response(
+        status_code=200,
+        headers={"x-build-id": "2026-03-04-logtest-1"},
+    )
+
 
 @app.get("/{full_path:path}", include_in_schema=False)
 def spa_fallback(full_path: str):
