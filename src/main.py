@@ -24,6 +24,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from src.modules.service_visits.router import router as service_visits_router
 from src.modules.complaints.router import router as complaints_router
 from src.modules.chat.router import router as chat_router
 from src.db.repositories.request_logs_repo import insert_request_log
@@ -40,6 +41,8 @@ app = FastAPI(
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 req_logger = logging.getLogger("uvicorn.error")
 req_logger.setLevel(logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 # Allow all origins for development — tighten this in production
 app.add_middleware(
@@ -84,6 +87,7 @@ async def log_every_request(request: Request, call_next):
 # Register routers for different modules
 app.include_router(chat_router)
 app.include_router(complaints_router)
+app.include_router(service_visits_router)
 
 
 class HealthResponse(BaseModel):

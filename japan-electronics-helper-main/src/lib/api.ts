@@ -29,6 +29,24 @@ export async function trackComplaint(payload: {
   return data;
 }
 
+export async function scheduleVisit(payload: {
+  invoiceNumber: string;
+  phone: string;
+  address: string;
+  date: string;
+  time: string;
+}) {
+  const res = await fetch(`${API_BASE}/service-visits/schedule`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Failed to schedule visit");
+  return data;
+}
+
+
 export async function sendChatMessage(payload: { user_id: string; message: string }) {
   const res = await fetch(`${API_BASE}/chat`, {
     method: "POST",

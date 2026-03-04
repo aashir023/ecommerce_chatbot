@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { logComplaint, trackComplaint, sendChatMessage, clearChatHistory } from "@/lib/api";
+import { logComplaint, trackComplaint, scheduleVisit, sendChatMessage, clearChatHistory } from "@/lib/api";
 import { MessageCircle, X, Send, RotateCcw, ArrowLeft, Phone } from "lucide-react";
 import { ChatMessage, StatusResult } from "./types";
 import { mainQuickActions, serviceCenters, ESCALATION_NUMBER, productFAQs } from "./chatData";
@@ -211,12 +211,35 @@ const userIdRef = useRef<string>(getOrCreateUserId());
 
 
   const handleScheduleSubmit = async (data: { date: string; time: string; invoiceNumber: string; phone: string; address: string }) => {
-    addUserMessage(`Schedule visit on ${data.date} at ${data.time}`);
+  addUserMessage(`Schedule visit on ${data.date} at ${data.time}`);
+
+  try {
+    setIsTyping(true);
+
+    const result = await scheduleVisit({
+      invoiceNumber: data.invoiceNumber,
+      phone: data.phone,
+      address: data.address,
+      date: data.date,
+      time: data.time,
+    });
+
     await addBotMessage(
-      `✅ Technician visit confirmed!\n\n📅 **Date:** ${data.date}\n🕐 **Time:** ${data.time}\n📍 **Address:** ${data.address}\n📞 **Contact:** ${data.phone}\n\nOur technician will call you 30 minutes before arrival. You can reschedule up to 2 hours before the visit.`
+      `✅ ${result.message}\n\n` +
+      `**Visit Number:** ${result.visitNumber}\n` +
+      `**Status:** ${result.status}\n` +
+      `**Date:** ${result.date}\n` +
+      `**Time:** ${result.time}\n\n` +
+      `Our technician will call you 30 minutes before arrival.`
     );
+  } catch (err: any) {
+    await addBotMessage(`❌ ${err?.message || "Could not schedule technician visit. Please try again."}`);
+  } finally {
+    setIsTyping(false);
     setCurrentFlow("main");
-  };
+  }
+};
+
 
   const handleSendMessage = async () => {
   const text = inputValue.trim();
