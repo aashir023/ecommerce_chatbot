@@ -20,7 +20,7 @@ def chat(request: ChatRequest):
     - Use conversation history to handle follow-up questions
     - Respond as a helpful Japan Electronics customer service agent
     """
-    chat_logger.info("[CHAT_HIT] user_id=%s msg_len=%d", request.user_id, len(request.message))
+    print(f"[CHAT_HIT] user_id={request.user_id} msg_len={len(request.message)}", flush=True)
     try:
         reply = send_message(
             user_id=request.user_id,

@@ -54,14 +54,12 @@ async def log_every_request(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
     duration_ms = (time.time() - start) * 1000
+
     if request.url.path in {"/health", "/chat"}:
-        req_logger.info(
-        "[REQ] %s %s -> %s (%.1f ms)",
-        request.method,
-        request.url.path,
-        response.status_code,
-        duration_ms,
-    )
+        print(
+            f"[REQ] {request.method} {request.url.path} -> {response.status_code} ({duration_ms:.1f} ms)",
+            flush=True,
+        )
     return response
 
 
