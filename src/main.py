@@ -7,13 +7,16 @@ Endpoints:
   POST /chat           → send a message, get a reply
   DELETE /chat/history → clear conversation history for a user
   GET  /health         → health check
-  GET  /               → API info
+  GET  /               → serve the frontend UI
 
 Run with:
     python run_server.py
   or
     uvicorn src.main:app --reload
 """
+import logging
+import time
+from fastapi import Request
 
 from pathlib import Path
 
@@ -33,6 +36,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+req_logger = logging.getLogger("app.requests")
+
 # Allow all origins for development — tighten this in production
 app.add_middleware(
     CORSMiddleware,
@@ -41,6 +47,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def log_every_request(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start) * 1000
+    req_logger.info("%s %s -> %s (%.1f ms)", request.method, request.url.path, response.status_code, duration_ms)
+    return response
+
 
 # Register routers for different modules
 app.include_router(chat_router)

@@ -20,7 +20,7 @@ const ChatBubble = ({ message }: ChatBubbleProps) => {
         </div>
       )}
       <div
-        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm whitespace-pre-wrap break-words ${
           isUser
             ? "bg-chat-bubble-user text-chat-bubble-user-foreground rounded-br-md"
             : "bg-chat-bubble-bot text-chat-bubble-bot-foreground rounded-bl-md"
@@ -33,16 +33,35 @@ const ChatBubble = ({ message }: ChatBubbleProps) => {
 };
 
 const MessageContent = ({ content }: { content: string }) => {
-  // Simple markdown-like bold support
-  const parts = content.split(/(\*\*.*?\*\*)/g);
+  const chunks = content.split(/(\*\*.*?\*\*|\[.*?\]\(https?:\/\/[^\s)]+\))/g);
+
   return (
     <span>
-      {parts.map((part, i) => {
-        if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={i}>{part.slice(2, -2)}</strong>;
+      {chunks.map((chunk, i) => {
+        // bold: **text**
+        if (chunk.startsWith("**") && chunk.endsWith("**")) {
+          return <strong key={i}>{chunk.slice(2, -2)}</strong>;
         }
-        // Handle newlines
-        return part.split("\n").map((line, j, arr) => (
+
+        // markdown link: [label](url)
+        const linkMatch = chunk.match(/^\[(.*?)\]\((https?:\/\/[^\s)]+)\)$/);
+        if (linkMatch) {
+          const [, label, url] = linkMatch;
+          return (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline font-medium"
+            >
+              {label}
+            </a>
+          );
+        }
+
+        // normal text + new lines
+        return chunk.split("\n").map((line, j, arr) => (
           <span key={`${i}-${j}`}>
             {line}
             {j < arr.length - 1 && <br />}
@@ -52,5 +71,6 @@ const MessageContent = ({ content }: { content: string }) => {
     </span>
   );
 };
+
 
 export default ChatBubble;
