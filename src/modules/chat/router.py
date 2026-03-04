@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from src.modules.chat.schemas import ChatRequest, ChatResponse, HistoryResponse
 from src.modules.chat.service import (
     send_message,
@@ -11,27 +11,17 @@ router = APIRouter(prefix="/chat", tags=["Chat"])
 chat_logger = logging.getLogger("uvicorn.error")
 
 @router.post("", response_model=ChatResponse)
-def chat(request: ChatRequest):
-    """
-    Send a customer message and receive an AI-generated reply.
-
-    The bot will:
-    - Search the product catalogue for relevant items
-    - Use conversation history to handle follow-up questions
-    - Respond as a helpful Japan Electronics customer service agent
-    """
-    print(f"[CHAT_HIT] user_id={request.user_id} msg_len={len(request.message)}", flush=True)
+def chat(request: ChatRequest, raw_request: Request):
+    raw_request.state.chat_user_id = request.user_id
+    chat_logger.info("[CHAT_HIT] user_id=%s msg_len=%d", request.user_id, len(request.message))
     try:
         reply = send_message(
             user_id=request.user_id,
             message=request.message,
         )
         return ChatResponse(reply=reply)
-
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Bot error: {str(e)}")
-
 
 
 @router.get("/history/{user_id}", response_model=HistoryResponse, tags=["Chat"])

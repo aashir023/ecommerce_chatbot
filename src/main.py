@@ -26,6 +26,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from src.modules.complaints.router import router as complaints_router
 from src.modules.chat.router import router as chat_router
+from src.db.repositories.request_logs_repo import insert_request_log
 from pydantic import BaseModel
 
 # ── App setup ─────────────────────────────────────────────────────────────────
@@ -56,12 +57,29 @@ async def log_every_request(request: Request, call_next):
     duration_ms = (time.time() - start) * 1000
 
     if request.url.path in {"/health", "/chat"}:
-        print(
-            f"[REQ] {request.method} {request.url.path} -> {response.status_code} ({duration_ms:.1f} ms)",
-            flush=True,
-        )
-    return response
+        user_id = getattr(request.state, "chat_user_id", None)
 
+        req_logger.info(
+            "[REQ] %s %s -> %s (%.1f ms) user_id=%s",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+            user_id,
+        )
+
+        try:
+            insert_request_log(
+                method=request.method,
+                path=request.url.path,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+                user_id=user_id,
+            )
+        except Exception as exc:
+            req_logger.warning("Failed to write request log to Supabase: %s", exc)
+
+    return response
 
 # Register routers for different modules
 app.include_router(chat_router)
@@ -95,19 +113,13 @@ def root():
     }
 
 @app.get("/health", response_model=HealthResponse, tags=["Info"])
-def health_check(response: Response):
-    print("[HEALTH_HIT] endpoint executed", flush=True)
-    response.headers["x-build-id"] = "2026-03-04-logtest-1"
+def health_check():
     return HealthResponse(status="ok", message="Bot is running")
 
 
 @app.head("/health", tags=["Info"])
 def health_check_head():
-    print("[HEALTH_HEAD_HIT] endpoint executed", flush=True)
-    return Response(
-        status_code=200,
-        headers={"x-build-id": "2026-03-04-logtest-1"},
-    )
+    return Response(status_code=200)
 
 
 @app.get("/{full_path:path}", include_in_schema=False)
