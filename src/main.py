@@ -37,7 +37,8 @@ app = FastAPI(
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-req_logger = logging.getLogger("app.requests")
+req_logger = logging.getLogger("uvicorn.error")
+req_logger.setLevel(logging.INFO)
 
 # Allow all origins for development — tighten this in production
 app.add_middleware(
@@ -53,7 +54,14 @@ async def log_every_request(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
     duration_ms = (time.time() - start) * 1000
-    req_logger.info("%s %s -> %s (%.1f ms)", request.method, request.url.path, response.status_code, duration_ms)
+    if request.url.path in {"/health", "/chat"}:
+        req_logger.info(
+        "[REQ] %s %s -> %s (%.1f ms)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
     return response
 
 
@@ -72,9 +80,6 @@ INDEX_HTML = FRONTEND_DIR / "index.html"
 app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="frontend-assets")
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
-
-
-
 @app.get("/", tags=["UI"])
 def frontend():
     if not INDEX_HTML.exists():

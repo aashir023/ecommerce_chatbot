@@ -1,5 +1,5 @@
+import logging
 from fastapi import APIRouter, HTTPException
-
 from src.modules.chat.schemas import ChatRequest, ChatResponse, HistoryResponse
 from src.modules.chat.service import (
     send_message,
@@ -8,8 +8,7 @@ from src.modules.chat.service import (
 )
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
-
-
+chat_logger = logging.getLogger("uvicorn.error")
 
 @router.post("", response_model=ChatResponse)
 def chat(request: ChatRequest):
@@ -21,17 +20,14 @@ def chat(request: ChatRequest):
     - Use conversation history to handle follow-up questions
     - Respond as a helpful Japan Electronics customer service agent
     """
+    chat_logger.info("[CHAT_HIT] user_id=%s msg_len=%d", request.user_id, len(request.message))
     try:
-        reply, message_count, ui_payload = send_message(
+        reply = send_message(
             user_id=request.user_id,
             message=request.message,
         )
-        return ChatResponse(
-            user_id=request.user_id,
-            reply=reply,
-            message_count=message_count,
-            ui_payload=ui_payload,
-        )
+        return ChatResponse(reply=reply)
+
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Bot error: {str(e)}")

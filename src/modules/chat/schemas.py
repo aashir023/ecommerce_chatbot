@@ -1,7 +1,6 @@
 """
 Schemas for request and response models in the chat module.
 """
-from typing import Any
 from pydantic import BaseModel, Field
 
 
@@ -23,10 +22,7 @@ class ChatRequest(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    user_id: str
     reply: str
-    message_count: int   # how many turns in this user's history so far
-    ui_payload: dict[str, Any] | None = None  # Optional field for any additional info the frontend might need (e.g. product cards)
 
 class HistoryResponse(BaseModel):
     user_id: str
