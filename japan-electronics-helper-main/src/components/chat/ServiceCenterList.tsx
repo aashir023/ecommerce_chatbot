@@ -12,7 +12,7 @@ const ServiceCenterList = ({ centers }: ServiceCenterListProps) => {
           JE
         </div>
         <p className="text-sm text-chat-bubble-bot-foreground bg-chat-bubble-bot rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
-          📍 Here are our <strong>9 service centers</strong> near you:
+          📍 Here are our <strong>{centers.length} service centers</strong> near you:
         </p>
       </div>
       <div className="ml-9 space-y-2 max-h-[300px] overflow-y-auto pr-1">

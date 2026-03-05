@@ -27,7 +27,6 @@ from fastapi.staticfiles import StaticFiles
 from src.modules.service_visits.router import router as service_visits_router
 from src.modules.complaints.router import router as complaints_router
 from src.modules.chat.router import router as chat_router
-from src.db.repositories.request_logs_repo import insert_request_log
 from pydantic import BaseModel
 
 # ── App setup ─────────────────────────────────────────────────────────────────
@@ -70,17 +69,6 @@ async def log_every_request(request: Request, call_next):
             duration_ms,
             user_id,
         )
-
-        try:
-            insert_request_log(
-                method=request.method,
-                path=request.url.path,
-                status_code=response.status_code,
-                duration_ms=duration_ms,
-                user_id=user_id,
-            )
-        except Exception as exc:
-            req_logger.warning("Failed to write request log to Supabase: %s", exc)
 
     return response
 
