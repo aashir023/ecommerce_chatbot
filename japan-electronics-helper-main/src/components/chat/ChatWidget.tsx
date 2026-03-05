@@ -268,7 +268,7 @@ const userIdRef = useRef<string>(getOrCreateUserId());
 
     setCurrentFlow("main");
   } catch (err: any) {
-    await addBotMessage(`❌ ${err?.message || "Could not reach chat service."}`, 200);
+    await addBotMessage(`❌ ${err?.message || "Network issue, please retry."}`, 200);
   } finally {
     setIsTyping(false);
   }

@@ -5,13 +5,29 @@ from src.modules.complaints.schemas import (
     LogComplaintResponse,
     TrackComplaintRequest,
     TrackComplaintResponse,
+    OrderPreviewRequest,
+    OrderPreviewResponse,
 )
 from src.modules.complaints.service import (
     log_complaint_from_form,
     track_complaint_from_form,
+    preview_order_from_form,
 )
 
 router = APIRouter(prefix="/complaints", tags=["Complaints"])
+
+@router.post("/order-preview", response_model=OrderPreviewResponse)
+def preview_order(request: OrderPreviewRequest):
+    try:
+        result = preview_order_from_form(
+            invoice_number=request.invoiceNumber.strip(),
+            phone=request.phone.strip(),
+        )
+        return OrderPreviewResponse(**result)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Failed to preview order: {str(exc)}")
 
 
 @router.post("/log", response_model=LogComplaintResponse)

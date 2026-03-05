@@ -52,6 +52,44 @@ def _validate_date_and_time(date_str: str, time_str: str) -> None:
     if selected_date > max_date:
         raise ValueError(f"Date must be within the next {MAX_DAYS_AHEAD} days.")
 
+def preview_order_for_visit(invoice_number: str, phone: str) -> dict:
+    invoice_number = invoice_number.strip()
+    phone = phone.strip()
+
+    supabase = get_supabase_client()
+
+    cust_resp = (
+        supabase.table("customers")
+        .select("*")
+        .eq("phone", phone)
+        .limit(1)
+        .execute()
+    )
+    customer = cust_resp.data[0] if cust_resp.data else None
+    if not customer:
+        raise ValueError("No customer found for this phone number.")
+
+    order_resp = (
+        supabase.table("orders")
+        .select("*")
+        .eq("invoice_no", invoice_number)
+        .eq("customer_id", customer["id"])
+        .limit(1)
+        .execute()
+    )
+    order = order_resp.data[0] if order_resp.data else None
+    if not order:
+        raise ValueError("Invoice not found for this phone number.")
+
+    return {
+        "success": True,
+        "message": "Order matched successfully.",
+        "invoiceNumber": order.get("invoice_no") or invoice_number,
+        "orderNo": order.get("order_no") or "",
+        "productName": order.get("product_name") or "N/A",
+        "productDescription": order.get("product_description") or "N/A",
+    }
+
 
 def schedule_visit_from_form(
     invoice_number: str,

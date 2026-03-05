@@ -17,3 +17,16 @@ class ScheduleVisitResponse(BaseModel):
     status: Literal["scheduled", "confirmed", "rescheduled", "cancelled", "completed"]
     date: str
     time: str
+
+class ServiceVisitOrderPreviewRequest(BaseModel):
+    invoiceNumber: str = Field(..., min_length=1)
+    phone: str = Field(..., min_length=1)
+
+
+class ServiceVisitOrderPreviewResponse(BaseModel):
+    success: bool
+    message: str
+    invoiceNumber: str
+    orderNo: str
+    productName: str
+    productDescription: str

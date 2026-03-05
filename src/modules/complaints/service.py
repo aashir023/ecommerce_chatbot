@@ -20,6 +20,46 @@ def _map_status_for_ui(status: str) -> str:
         return "escalated"
     return "pending"
 
+def preview_order_from_form(invoice_number: str, phone: str) -> dict:
+    supabase = get_supabase_client()
+
+    invoice_number = invoice_number.strip()
+    phone = phone.strip()
+
+    # 1) find customer by phone
+    cust_resp = (
+        supabase.table("customers")
+        .select("*")
+        .eq("phone", phone)
+        .limit(1)
+        .execute()
+    )
+    customer = cust_resp.data[0] if cust_resp.data else None
+    if not customer:
+        raise ValueError("No customer found for this phone number.")
+
+    # 2) find order by invoice + customer
+    order_resp = (
+        supabase.table("orders")
+        .select("*")
+        .eq("invoice_no", invoice_number)
+        .eq("customer_id", customer["id"])
+        .limit(1)
+        .execute()
+    )
+    order = order_resp.data[0] if order_resp.data else None
+    if not order:
+        raise ValueError("Invoice not found for this phone number.")
+
+    return {
+        "success": True,
+        "message": "Order matched successfully.",
+        "invoiceNumber": order.get("invoice_no") or invoice_number,
+        "orderNo": order.get("order_no") or "",
+        "productName": order.get("product_name") or "N/A",
+        "productDescription": order.get("product_description") or "N/A",
+    }
+
 
 def log_complaint_from_form(invoice_number: str, phone: str, description: str) -> dict:
     supabase = get_supabase_client()

@@ -33,3 +33,16 @@ class TrackComplaintResponse(BaseModel):
     status: Literal["pending", "in-progress", "resolved", "escalated"]
     description: str
     date: str
+
+class OrderPreviewRequest(BaseModel):
+    invoiceNumber: str = Field(..., min_length=1)
+    phone: str = Field(..., min_length=1)
+
+
+class OrderPreviewResponse(BaseModel):
+    success: bool
+    message: str
+    invoiceNumber: str
+    orderNo: str
+    productName: str
+    productDescription: str
