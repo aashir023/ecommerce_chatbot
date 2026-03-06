@@ -2,6 +2,25 @@ import json
 import re
 from src.core.config import CHAT_MODEL
 
+def _as_clean_str_list(value) -> list[str]:
+    if isinstance(value, str):
+        raw = [v.strip() for v in value.split(",")]
+    elif isinstance(value, list):
+        raw = [str(v).strip() for v in value]
+    else:
+        raw = []
+
+    out = []
+    seen = set()
+    for item in raw:
+        if not item:
+            continue
+        key = item.casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(item)
+    return out
 
 def resolve_query_with_history(openai_client, user_message: str, history: list[dict]) -> dict:
     """
@@ -16,11 +35,14 @@ def resolve_query_with_history(openai_client, user_message: str, history: list[d
     resolver_prompt = f"""You are a query resolver for an ecommerce assistant.
 
 Return STRICT JSON only:
-{{
-  "intent": "product",
+{{  "intent": "product",
   "is_followup": false,
-  "standalone_query": "..."
+  "standalone_query": "...",
+  "is_comparison": false,
+  "comparison_brands": [],
+  "target_product_type": ""
 }}
+
 
 Rules:
 - intent must be one of: product, site_info, irrelevant.
@@ -30,6 +52,10 @@ Rules:
 - For product/search/buy/price/spec queries use intent=product.
 - For locations, policies, delivery, FAQ, contact, complaints, and store/company info use intent=site_info.
 - Only use intent=irrelevant for clearly off-domain requests.
+- Detect comparison intent from meaning even with typos, transliteration, mixed language, or informal phrasing; if user is asking to compare products/models/brands, set is_comparison=true.
+- If latest user message asks to compare products/brands/models, set is_comparison=true.
+- Extract comparison_brands as explicit brand names mentioned by user/history when available; otherwise [].
+- Extract target_product_type as a short retrieval-friendly English phrase (example: "air conditioner", "refrigerator", "washing machine", "led tv"). If unknown, keep "".
 - Output JSON only, no extra text.
 
 Example:
@@ -59,18 +85,28 @@ Latest user message:
         intent = str(data.get("intent", "product")).strip().lower()
         if intent not in {"product", "site_info", "irrelevant"}:
             intent = "product"
+        brands = _as_clean_str_list(data.get("comparison_brands", []))
+        target_product_type = str(data.get("target_product_type") or "").strip()
+        is_comparison = bool(data.get("is_comparison", False) or len(brands) >= 2)
+
         return {
             "intent": intent,
             "is_followup": bool(data.get("is_followup", False)),
             "standalone_query": (data.get("standalone_query") or user_message).strip(),
-        }
-    except Exception:
-        return {
-            "intent": "product",
-            "is_followup": False,
-            "standalone_query": user_message,
+            "is_comparison": is_comparison,
+            "comparison_brands": brands,
+            "target_product_type": target_product_type,
         }
 
+    except Exception:
+        return {
+        "intent": "product",
+        "is_followup": False,
+        "standalone_query": user_message,
+        "is_comparison": False,
+        "comparison_brands": [],
+        "target_product_type": "",
+    }
 
 def _extract_product_reference_index(message: str) -> int | None:
     """Map product references like '#3', 'product 2', '2nd', 'first', 'last'."""

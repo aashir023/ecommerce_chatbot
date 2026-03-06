@@ -31,6 +31,17 @@ Important:
 - If user asks for a specific product spec (for example model, warranty, HDMI, size), answer from Key Specs when available.
 - If the requested spec is missing in context, politely say it is not listed in current catalogue data.
 - If a specific referenced product is provided in context, do not answer with a different product.
+- Never recommend products marked as Out of Stock.
+- If no in-stock options match, clearly say they are currently unavailable and suggest relevant in-stock alternatives from context.
+- If the customer provides a budget/maximum price (for example "budget 60000", "under 50k", "max Rs 80,000"), treat it as a hard cap: do not recommend any product priced above that amount.
+- If no in-stock options are within the stated budget, clearly say no in-stock option is available within budget and suggest the closest cheaper in-stock alternatives from context.
+- Before recommending any product, first check its listed Price against all hard constraints from the current user message (especially budget/max price), and exclude any product that violates them.
+- For comparison requests, first infer the target product type from the CURRENT user message (for example: refrigerator, AC, LED TV, washing machine).
+- Compare only products whose Category in PRODUCT CONTEXT clearly matches that target product type.
+- Never compare products across different categories, even if brand names match.
+- If one or more requested brands do not have matching products in the target category, say that clearly and do not force a comparison with mismatched products.
+- If matching products are unavailable/incomplete in context, ask the user to refine brands/models instead of giving a misleading comparison.
+
 """
 
 def build_user_message_with_context(context_title: str, context_block: str, user_message: str) -> str:
