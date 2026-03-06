@@ -256,6 +256,18 @@ const userIdRef = useRef<string>(getOrCreateUserId());
       message: text,
     });
 
+    if (result.action === "open_complaint_form") {
+      await addBotMessage(result.reply, 200);
+      setCurrentFlow("complaint-form");
+      return;
+    }
+
+    if (result.action === "open_schedule_form") {
+      await addBotMessage(result.reply, 200);
+      setCurrentFlow("schedule-form");
+      return;
+    }
+
     setMessages((prev) => [
       ...prev,
       {

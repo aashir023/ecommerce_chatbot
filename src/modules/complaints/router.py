@@ -20,8 +20,8 @@ router = APIRouter(prefix="/complaints", tags=["Complaints"])
 def preview_order(request: OrderPreviewRequest):
     try:
         result = preview_order_from_form(
-            invoice_number=request.invoiceNumber.strip(),
-            phone=request.phone.strip(),
+            invoice_number=(request.invoiceNumber or "").strip(),
+            phone=(request.phone or "").strip(),
         )
         return OrderPreviewResponse(**result)
     except ValueError as exc:
@@ -34,9 +34,9 @@ def preview_order(request: OrderPreviewRequest):
 def log_complaint(request: LogComplaintRequest):
     try:
         result = log_complaint_from_form(
-            invoice_number=request.invoiceNumber.strip(),
-            phone=request.phone.strip(),
-            description=request.description.strip(),
+            invoice_number=(request.invoiceNumber or "").strip(),
+            phone=(request.phone or "").strip(),
+            description=(request.description or "").strip(),
         )
         return LogComplaintResponse(**result)
     except ValueError as exc:

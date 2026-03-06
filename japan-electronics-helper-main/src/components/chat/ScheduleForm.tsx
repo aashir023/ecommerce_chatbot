@@ -38,7 +38,10 @@ const ScheduleForm = ({ onSubmit }: ScheduleFormProps) => {
   const handleCheckOrder = async () => {
     const inv = invoiceNumber.trim();
     const ph = phone.trim();
-    if (!inv || !ph) return;
+    if (!inv && !ph) {
+      setError("Enter invoice number or phone number.");
+      return;
+    }
 
     setError("");
     setPreview(null);
@@ -80,18 +83,17 @@ const ScheduleForm = ({ onSubmit }: ScheduleFormProps) => {
 
       <input
         type="text"
-        placeholder="Invoice Number *"
+        placeholder="Invoice Number"
         value={invoiceNumber}
         onChange={(e) => setInvoiceNumber(e.target.value)}
-        required
         className="w-full px-3 py-2 rounded-lg text-sm bg-chat-bg text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
+      <p className="text-[11px] text-muted-foreground text-center font-medium">OR</p>
       <input
         type="tel"
-        placeholder="Phone Number *"
+        placeholder="Phone Number"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        required
         className="w-full px-3 py-2 rounded-lg text-sm bg-chat-bg text-foreground border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
 
@@ -99,7 +101,7 @@ const ScheduleForm = ({ onSubmit }: ScheduleFormProps) => {
         <button
           type="button"
           onClick={handleCheckOrder}
-          disabled={isChecking || !invoiceNumber.trim() || !phone.trim()}
+          disabled={isChecking || (!invoiceNumber.trim() && !phone.trim())}
           className="w-full py-2 rounded-lg text-sm font-semibold bg-primary text-primary-foreground disabled:opacity-50 hover:opacity-90 transition-opacity"
         >
           {isChecking ? "Checking..." : "Check Order"}

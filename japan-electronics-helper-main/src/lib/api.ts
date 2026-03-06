@@ -1,5 +1,12 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
+function getErrorMessage(detail: any, fallback: string) {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) return detail.map((d) => d?.msg || JSON.stringify(d)).join(", ");
+  if (detail && typeof detail === "object") return detail.message || JSON.stringify(detail);
+  return fallback;
+}
+
 function isFailedToFetch(err: unknown) {
   return err instanceof TypeError && /failed to fetch/i.test(err.message);
 }
@@ -28,7 +35,7 @@ export async function logComplaint(payload: {
     body: JSON.stringify(payload),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to log complaint");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to log complaint"));
   return data;
 }
 
@@ -42,7 +49,7 @@ export async function previewComplaintOrder(payload: {
     body: JSON.stringify(payload),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to preview order");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to preview order"));
   return data;
 }
 
@@ -56,7 +63,7 @@ export async function trackComplaint(payload: {
     body: JSON.stringify(payload),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to track complaint");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to track complaint"));
   return data;
 }
 
@@ -73,7 +80,8 @@ export async function scheduleVisit(payload: {
     body: JSON.stringify(payload),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to schedule visit");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to schedule visit"));
+
   return data;
 }
 
@@ -87,11 +95,17 @@ export async function previewServiceVisitOrder(payload: {
     body: JSON.stringify(payload),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to preview order");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to preview order"));
+
   return data;
 }
 
-export async function sendChatMessage(payload: { user_id: string; message: string }) {
+export async function sendChatMessage(
+  payload: { user_id: string; message: string }
+): Promise<{
+  reply: string;
+  action: "open_complaint_form" | "open_schedule_form" | null;
+}> {
   const res = await fetchWithOneRetry(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -99,7 +113,7 @@ export async function sendChatMessage(payload: { user_id: string; message: strin
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to send message");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to send message"));
   return data; // { user_id, reply, message_count, ... }
 }
 
@@ -108,6 +122,7 @@ export async function clearChatHistory(userId: string) {
     method: "DELETE",
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.detail || "Failed to clear chat history");
+  if (!res.ok) throw new Error(getErrorMessage(data?.detail, "Failed to clear chat history"));
+
   return data;
 }

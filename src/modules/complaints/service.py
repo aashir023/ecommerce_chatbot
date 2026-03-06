@@ -20,36 +20,72 @@ def _map_status_for_ui(status: str) -> str:
         return "escalated"
     return "pending"
 
-def preview_order_from_form(invoice_number: str, phone: str) -> dict:
+def _resolve_customer_and_order(invoice_number: str, phone: str):
     supabase = get_supabase_client()
+    invoice_number = (invoice_number or "").strip()
+    phone = (phone or "").strip()
 
-    invoice_number = invoice_number.strip()
-    phone = phone.strip()
+    if not invoice_number and not phone:
+        raise ValueError("Enter invoice number or phone number.")
 
-    # 1) find customer by phone
-    cust_resp = (
-        supabase.table("customers")
-        .select("*")
-        .eq("phone", phone)
-        .limit(1)
-        .execute()
-    )
+    # Both provided: strongest match
+    if invoice_number and phone:
+        cust_resp = supabase.table("customers").select("*").eq("phone", phone).limit(1).execute()
+        customer = cust_resp.data[0] if cust_resp.data else None
+        if not customer:
+            raise ValueError("No customer found for this phone number.")
+
+        order_resp = (
+            supabase.table("orders")
+            .select("*")
+            .eq("invoice_no", invoice_number)
+            .eq("customer_id", customer["id"])
+            .limit(1)
+            .execute()
+        )
+        order = order_resp.data[0] if order_resp.data else None
+        if not order:
+            raise ValueError("Invoice not found for this phone number.")
+        return customer, order
+
+    # Invoice only
+    if invoice_number:
+        order_resp = supabase.table("orders").select("*").eq("invoice_no", invoice_number).limit(2).execute()
+        orders = order_resp.data or []
+        if not orders:
+            raise ValueError("No order found for this invoice number.")
+        if len(orders) > 1:
+            raise ValueError("Multiple orders found for this invoice. Please also enter phone number.")
+        order = orders[0]
+
+        cust_resp = supabase.table("customers").select("*").eq("id", order["customer_id"]).limit(1).execute()
+        customer = cust_resp.data[0] if cust_resp.data else None
+        if not customer:
+            raise ValueError("Customer not found for this invoice.")
+        return customer, order
+
+    # Phone only
+    cust_resp = supabase.table("customers").select("*").eq("phone", phone).limit(1).execute()
     customer = cust_resp.data[0] if cust_resp.data else None
     if not customer:
         raise ValueError("No customer found for this phone number.")
 
-    # 2) find order by invoice + customer
     order_resp = (
         supabase.table("orders")
         .select("*")
-        .eq("invoice_no", invoice_number)
         .eq("customer_id", customer["id"])
-        .limit(1)
+        .limit(2)
         .execute()
     )
-    order = order_resp.data[0] if order_resp.data else None
-    if not order:
-        raise ValueError("Invoice not found for this phone number.")
+    orders = order_resp.data or []
+    if not orders:
+        raise ValueError("No order found for this phone number.")
+    if len(orders) > 1:
+        raise ValueError("Multiple orders found for this phone. Please also enter invoice number.")
+    return customer, orders[0]
+
+def preview_order_from_form(invoice_number: str, phone: str) -> dict:
+    customer, order = _resolve_customer_and_order(invoice_number, phone)
 
     return {
         "success": True,
@@ -62,36 +98,14 @@ def preview_order_from_form(invoice_number: str, phone: str) -> dict:
 
 
 def log_complaint_from_form(invoice_number: str, phone: str, description: str) -> dict:
-    supabase = get_supabase_client()
-
-    # 1) find customer by phone
-    cust_resp = (
-        supabase.table("customers")
-        .select("*")
-        .eq("phone", phone)
-        .limit(1)
-        .execute()
-    )
-    customer = cust_resp.data[0] if cust_resp.data else None
-    if not customer:
-        raise ValueError("No customer found for this phone number.")
-
-    # 2) find order by invoice + customer
-    order_resp = (
-        supabase.table("orders")
-        .select("*")
-        .eq("invoice_no", invoice_number)
-        .eq("customer_id", customer["id"])
-        .limit(1)
-        .execute()
-    )
-    order = order_resp.data[0] if order_resp.data else None
-    if not order:
-        raise ValueError("Invoice not found for this phone number.")
+    customer, order = _resolve_customer_and_order(invoice_number, phone)
+    description = (description or "").strip()
+    if not description:
+        raise ValueError("Description is required.")
 
     # 3) create complaint
     case_id = generate_case_id()
-    summary = (description or "").strip() or "Customer submitted complaint"
+    summary = description
 
     complaint_payload = {
         "case_id": case_id,

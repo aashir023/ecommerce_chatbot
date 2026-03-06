@@ -15,11 +15,11 @@ def chat(request: ChatRequest, raw_request: Request):
     raw_request.state.chat_user_id = request.user_id
     chat_logger.info("[CHAT_HIT] user_id=%s msg_len=%d", request.user_id, len(request.message))
     try:
-        reply = send_message(
+        result = send_message(
             user_id=request.user_id,
             message=request.message,
         )
-        return ChatResponse(reply=reply)
+        return ChatResponse(**result)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Bot error: {str(e)}")
 

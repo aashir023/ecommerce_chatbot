@@ -17,8 +17,8 @@ router = APIRouter(prefix="/service-visits", tags=["Service Visits"])
 def preview_order(request: ServiceVisitOrderPreviewRequest):
     try:
         result = preview_order_for_visit(
-            invoice_number=request.invoiceNumber.strip(),
-            phone=request.phone.strip(),
+            invoice_number=(request.invoiceNumber or "").strip(),
+            phone=(request.phone or "").strip(),
         )
         return ServiceVisitOrderPreviewResponse(**result)
     except ValueError as exc:
@@ -30,11 +30,11 @@ def preview_order(request: ServiceVisitOrderPreviewRequest):
 def schedule_visit(request: ScheduleVisitRequest):
     try:
         result = schedule_visit_from_form(
-            invoice_number=request.invoiceNumber,
-            phone=request.phone,
-            address=request.address,
-            date=request.date,
-            time=request.time,
+            invoice_number=(request.invoiceNumber or "").strip(),
+            phone=(request.phone or "").strip(),
+            address=(request.address or "").strip(),
+            date=(request.date or "").strip(),
+            time=(request.time or "").strip(),
         )
         return ScheduleVisitResponse(**result)
     except ValueError as exc:

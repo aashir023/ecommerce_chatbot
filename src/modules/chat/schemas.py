@@ -2,7 +2,7 @@
 Schemas for request and response models in the chat module.
 """
 from pydantic import BaseModel, Field
-
+from typing import Literal
 
 # ── Request / Response schemas ────────────────────────────────────────────────
 
@@ -23,7 +23,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-
+    action: Literal["open_complaint_form", "open_schedule_form"] | None = None
+    
 class HistoryResponse(BaseModel):
     user_id: str
     history: list[dict]

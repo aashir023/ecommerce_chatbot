@@ -8,9 +8,9 @@ from typing import Literal
 
 
 class LogComplaintRequest(BaseModel):
-    invoiceNumber: str = Field(..., min_length=1)
-    phone: str = Field(..., min_length=1)
-    description: str = ""
+    invoiceNumber: str | None = None
+    phone: str | None = None
+    description: str = Field(..., min_length=1)
 
 
 class LogComplaintResponse(BaseModel):
@@ -35,8 +35,8 @@ class TrackComplaintResponse(BaseModel):
     date: str
 
 class OrderPreviewRequest(BaseModel):
-    invoiceNumber: str = Field(..., min_length=1)
-    phone: str = Field(..., min_length=1)
+    invoiceNumber: str | None = None
+    phone: str | None = None
 
 
 class OrderPreviewResponse(BaseModel):

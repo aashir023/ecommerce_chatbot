@@ -52,19 +52,52 @@ def _validate_date_and_time(date_str: str, time_str: str) -> None:
     if selected_date > max_date:
         raise ValueError(f"Date must be within the next {MAX_DAYS_AHEAD} days.")
 
-def preview_order_for_visit(invoice_number: str, phone: str) -> dict:
-    invoice_number = invoice_number.strip()
-    phone = phone.strip()
-
+def _resolve_customer_and_order(invoice_number: str, phone: str):
     supabase = get_supabase_client()
+    invoice_number = (invoice_number or "").strip()
+    phone = (phone or "").strip()
 
-    cust_resp = (
-        supabase.table("customers")
-        .select("*")
-        .eq("phone", phone)
-        .limit(1)
-        .execute()
-    )
+    if not invoice_number and not phone:
+        raise ValueError("Enter invoice number or phone number.")
+
+    # Both provided
+    if invoice_number and phone:
+        cust_resp = supabase.table("customers").select("*").eq("phone", phone).limit(1).execute()
+        customer = cust_resp.data[0] if cust_resp.data else None
+        if not customer:
+            raise ValueError("No customer found for this phone number.")
+
+        order_resp = (
+            supabase.table("orders")
+            .select("*")
+            .eq("invoice_no", invoice_number)
+            .eq("customer_id", customer["id"])
+            .limit(1)
+            .execute()
+        )
+        order = order_resp.data[0] if order_resp.data else None
+        if not order:
+            raise ValueError("Invoice not found for this phone number.")
+        return customer, order
+
+    # Invoice only
+    if invoice_number:
+        order_resp = supabase.table("orders").select("*").eq("invoice_no", invoice_number).limit(2).execute()
+        rows = order_resp.data or []
+        if not rows:
+            raise ValueError("No order found for this invoice number.")
+        if len(rows) > 1:
+            raise ValueError("Multiple orders found for this invoice. Please also enter phone number.")
+        order = rows[0]
+
+        cust_resp = supabase.table("customers").select("*").eq("id", order["customer_id"]).limit(1).execute()
+        customer = cust_resp.data[0] if cust_resp.data else None
+        if not customer:
+            raise ValueError("Customer not found for this invoice.")
+        return customer, order
+
+    # Phone only
+    cust_resp = supabase.table("customers").select("*").eq("phone", phone).limit(1).execute()
     customer = cust_resp.data[0] if cust_resp.data else None
     if not customer:
         raise ValueError("No customer found for this phone number.")
@@ -72,14 +105,19 @@ def preview_order_for_visit(invoice_number: str, phone: str) -> dict:
     order_resp = (
         supabase.table("orders")
         .select("*")
-        .eq("invoice_no", invoice_number)
         .eq("customer_id", customer["id"])
-        .limit(1)
+        .limit(2)
         .execute()
     )
-    order = order_resp.data[0] if order_resp.data else None
-    if not order:
-        raise ValueError("Invoice not found for this phone number.")
+    rows = order_resp.data or []
+    if not rows:
+        raise ValueError("No order found for this phone number.")
+    if len(rows) > 1:
+        raise ValueError("Multiple orders found for this phone. Please also enter invoice number.")
+    return customer, rows[0]
+
+def preview_order_for_visit(invoice_number: str, phone: str) -> dict:
+    customer, order = _resolve_customer_and_order(invoice_number, phone)
 
     return {
         "success": True,
@@ -98,54 +136,31 @@ def schedule_visit_from_form(
     date: str,
     time: str,
 ) -> dict:
-    invoice_number = invoice_number.strip()
-    phone = phone.strip()
-    address = address.strip()
-    date = date.strip()
-    time = time.strip()
+    invoice_number = (invoice_number or "").strip()
+    phone = (phone or "").strip()
+    address = (address or "").strip()
+    date = (date or "").strip()
+    time = (time or "").strip()
 
-    if not invoice_number:
-        raise ValueError("Invoice number is required.")
-    if not phone:
-        raise ValueError("Phone number is required.")
+    if not invoice_number and not phone:
+        raise ValueError("Enter invoice number or phone number.")
+        
     if not address:
         raise ValueError("Address is required.")
 
     _validate_date_and_time(date, time)
 
-    supabase = get_supabase_client()
-
-    # 1) find customer by phone
-    cust_resp = (
-        supabase.table("customers")
-        .select("*")
-        .eq("phone", phone)
-        .limit(1)
-        .execute()
-    )
-    customer = cust_resp.data[0] if cust_resp.data else None
-    if not customer:
-        raise ValueError("No customer found for this phone number.")
-
-    # 2) find order by invoice + customer
-    order_resp = (
-        supabase.table("orders")
-        .select("*")
-        .eq("invoice_no", invoice_number)
-        .eq("customer_id", customer["id"])
-        .limit(1)
-        .execute()
-    )
-    order = order_resp.data[0] if order_resp.data else None
-    if not order:
-        raise ValueError("Invoice not found for this phone number.")
+    customer, order = _resolve_customer_and_order(invoice_number, phone)
 
     # 3) prevent duplicate active booking for same invoice/date/time
+    effective_invoice_no = (order.get("invoice_no") or invoice_number or "").strip()
+
     conflict = find_conflicting_visit(
-        invoice_no=invoice_number,
+        invoice_no=effective_invoice_no,
         scheduled_date=date,
         scheduled_time=time,
     )
+
     if conflict:
         raise ValueError("A visit is already scheduled for this invoice at the selected date and time.")
 
@@ -156,7 +171,7 @@ def schedule_visit_from_form(
         "customer_id": customer["id"],
         "order_id": order["id"],
         "order_no": order.get("order_no"),
-        "invoice_no": order.get("invoice_no") or invoice_number,
+        "invoice_no": effective_invoice_no,
         "phone": phone,
         "address": address,
         "scheduled_date": date,

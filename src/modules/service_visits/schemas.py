@@ -3,9 +3,9 @@ from typing import Literal
 
 
 class ScheduleVisitRequest(BaseModel):
-    invoiceNumber: str = Field(..., min_length=1, max_length=100)
-    phone: str = Field(..., min_length=1, max_length=30)
-    address: str = Field(..., min_length=5, max_length=1000)
+    invoiceNumber: str | None = None
+    phone: str | None = None
+    address: str = Field(..., min_length=1, max_length=1000)
     date: str = Field(..., description="YYYY-MM-DD")
     time: str = Field(..., min_length=1, max_length=30)
 
@@ -19,8 +19,8 @@ class ScheduleVisitResponse(BaseModel):
     time: str
 
 class ServiceVisitOrderPreviewRequest(BaseModel):
-    invoiceNumber: str = Field(..., min_length=1)
-    phone: str = Field(..., min_length=1)
+    invoiceNumber: str | None = None
+    phone: str | None = None
 
 
 class ServiceVisitOrderPreviewResponse(BaseModel):
