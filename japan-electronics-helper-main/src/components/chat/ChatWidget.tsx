@@ -362,8 +362,13 @@ const userIdRef = useRef<string>(getOrCreateUserId());
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-chat-bg">
             {messages.map((msg) => {
               if (msg.type === "status-result" && msg.statusResult) {
-                return <StatusCard key={msg.id} result={msg.statusResult} />;
+                return (
+                  <div key={msg.id} className="py-1">
+                    <StatusCard result={msg.statusResult} />
+                  </div>
+                );
               }
+
               return <ChatBubble key={msg.id} message={msg} />;
             })}
 
