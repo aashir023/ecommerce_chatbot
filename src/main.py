@@ -34,7 +34,7 @@ from pydantic import BaseModel
 app = FastAPI(
     title="Japan Electronics Customer Service Chatbot",
     description="AI-powered product assistant for japanelectronics.com.pk",
-    version="1.0.0",
+    version="1.0.1",
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -99,7 +99,7 @@ def frontend():
 def root():
     return {
         "name": "Japan Electronics Customer Service Bot",
-        "version": "1.0.0",
+        "version": "1.0.1",
         "docs": "/docs",
         "health": "/health",
     }
