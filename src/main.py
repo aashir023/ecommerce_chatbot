@@ -98,7 +98,7 @@ def frontend():
 @app.get("/info", tags=["Info"])
 def root():
     return {
-        "name": "Japan Electronics Customer Service Bot",
+        "name": "Japan Electronics Customer Service Chatbot",
         "version": "1.0.1",
         "docs": "/docs",
         "health": "/health",
