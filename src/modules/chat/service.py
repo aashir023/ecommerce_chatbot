@@ -21,11 +21,15 @@ Return STRICT JSON only:
 or
 {{"action": "open_schedule_form"}}
 or
+{{"action": "open_track_form"}}
+or
 {{"action": null}}
 
 Rules:
 - open_complaint_form: user reports product issue/problem/fault/defect/damage, wants complaint, return/exchange due to issue, etc.
 - open_schedule_form: user asks technician visit, installation, repair visit, home service, schedule appointment, etc.
+- open_track_form: user asks to track/check complaint status, complaint progress, latest update, follow-up, complaint number status, etc.
+- If user intent is about existing complaint status/progress, prefer open_track_form (not open_complaint_form).
 - Understand English + Roman Urdu + mixed language.
 - If unclear, return null.
 - Output JSON only.
@@ -47,7 +51,7 @@ User message:
                 raw = raw[4:].strip()
         data = json.loads(raw)
         action = data.get("action")
-        if action in {"open_complaint_form", "open_schedule_form"}:
+        if action in {"open_complaint_form", "open_schedule_form", "open_track_form"}:
             return action
         return None
     except Exception:
@@ -63,6 +67,7 @@ Write one short, warm, personalized reply to this customer message:
 Goal:
 - If complaint action: guide user to open/fill complaint form in chat.
 - If schedule action: guide user to open/fill technician visit form in chat.
+- If track action: guide user to open/fill complaint tracking form in chat.
 - Match user language style (English or Roman Urdu).
 - If replying in Roman Urdu, use Pakistani Roman Urdu wording only (avoid Hindi vocabulary like "kripya", "sahayata", "bharein", "taake").
 - Do not use markdown.
@@ -84,6 +89,8 @@ Goal:
     # safe fallback
     if action == "open_complaint_form":
         return "I can help you log a complaint right away. Please use the complaint form below."
+    if action == "open_track_form":
+        return "I can help you track your complaint status. Please use the tracking form below."
     return "I can help you schedule a technician visit. Please use the schedule form below."
 
 
@@ -92,7 +99,7 @@ def send_message(user_id: str, message: str) -> dict:
 
     action = _detect_form_action(message)
 
-    if action in {"open_complaint_form", "open_schedule_form"}:
+    if action in {"open_complaint_form", "open_schedule_form", "open_track_form"}:
         reply = _build_action_reply(message, action)
     else:
         reply = generate_answer(user_message=message, user_id=user_id)

@@ -23,7 +23,7 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-    action: Literal["open_complaint_form", "open_schedule_form"] | None = None
+    action: Literal["open_complaint_form", "open_schedule_form", "open_track_form"] | None = None
     
 class HistoryResponse(BaseModel):
     user_id: str

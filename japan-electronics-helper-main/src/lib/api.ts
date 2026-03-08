@@ -104,7 +104,7 @@ export async function sendChatMessage(
   payload: { user_id: string; message: string }
 ): Promise<{
   reply: string;
-  action: "open_complaint_form" | "open_schedule_form" | null;
+  action: "open_complaint_form" | "open_schedule_form"| "open_track_form" | null;
 }> {
   const res = await fetchWithOneRetry(`${API_BASE}/chat`, {
     method: "POST",

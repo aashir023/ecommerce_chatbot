@@ -267,6 +267,13 @@ const userIdRef = useRef<string>(getOrCreateUserId());
       setCurrentFlow("schedule-form");
       return;
     }
+    
+    if (result.action === "open_track_form") {
+      await addBotMessage(result.reply, 200);
+      setCurrentFlow("track-form");
+      return;
+    }
+
 
     setMessages((prev) => [
       ...prev,
