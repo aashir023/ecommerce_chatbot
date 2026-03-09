@@ -13,7 +13,7 @@ chat_logger = logging.getLogger("uvicorn.error")
 @router.post("", response_model=ChatResponse)
 def chat(request: ChatRequest, raw_request: Request):
     raw_request.state.chat_user_id = request.user_id
-    chat_logger.info("User Query:  %s", request.message)
+    chat_logger.info("[CHAT_HIT] user_id=%s msg_len=%d message=%r", request.user_id, len(request.message), request.message)
     try:
         result = send_message(
             user_id=request.user_id,

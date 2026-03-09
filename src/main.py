@@ -33,7 +33,7 @@ from pydantic import BaseModel
 
 app = FastAPI(
     title="Japan Electronics Customer Service Chatbot",
-    description="AI-powered customer service representative for japanelectronics.com.pk",
+    description="AI-powered product assistant for japanelectronics.com.pk",
     version="1.0.1",
 )
 
