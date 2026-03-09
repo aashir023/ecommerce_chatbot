@@ -62,7 +62,7 @@ async def log_every_request(request: Request, call_next):
         user_id = getattr(request.state, "chat_user_id", None)
 
         req_logger.info(
-            "[REQ] %s %s -> %s (%.1f ms) user_id=%s",
+            # "[REQ] %s %s -> %s (%.1f ms) user_id=%s",
             request.method,
             request.url.path,
             response.status_code,
