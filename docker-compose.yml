@@ -1,0 +1,49 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    container_name: vllm
+    ports:
+      - "8000:8000"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+      - ~/.cache/vllm:/root/.cache/vllm
+    shm_size: "10gb"
+    environment:
+      - HF_HUB_OFFLINE=1
+    command: >
+      --model hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4
+      --served-model-name llama-3.1-8b-awq
+      --quantization awq_marlin
+      --dtype half
+      --max-model-len 8192
+      --gpu-memory-utilization 0.55
+      --enforce-eager
+      --load-format safetensors
+      --disable-log-requests
+      --enable-prefix-caching
+      --host 0.0.0.0
+      --port 8000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/v1/models').read()"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 5s
+
+  app:
+    build: .
+    container_name: je-fullstack
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env
+    environment:
+      - HF_HUB_OFFLINE=1
+    depends_on:
+      vllm:
+        condition: service_healthy

@@ -11,7 +11,7 @@ Core RAG logic:
 
 import re
 from openai import OpenAI
-from src.core.config import OPENAI_API_KEY, CHAT_MODEL, TOP_K_RESULTS
+from src.core.config import OPENAI_API_KEY, CHAT_MODEL, TOP_K_RESULTS, VLLM_BASE_URL, VLLM_API_KEY
 from src.modules.rag.prompts import SYSTEM_PROMPT, build_user_message_with_context
 from src.modules.rag.resolver import resolve_query_with_history, _pick_referenced_product, _prepend_focused_product
 from src.modules.rag.vector_store import (
@@ -30,11 +30,13 @@ from src.modules.chat.history_store import (
     set_last_product_results,
 )
 
+openai_client = OpenAI(
+    api_key=VLLM_API_KEY,
+    base_url=VLLM_BASE_URL,
+)
 
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 IN_STOCK_FILTER = {"availability": {"$eq": "In Stock"}}
-
 
 def _and_filters(a: dict | None, b: dict | None) -> dict | None:
     if a and b:
@@ -212,8 +214,6 @@ def generate_answer(user_message: str, user_id: str = "default") -> str:
     )
 
     assistant_reply = response.choices[0].message.content.strip()
-    finish_reason = response.choices[0].finish_reason
-    print(f"[LLM] finish_reason={finish_reason}, completion_tokens={getattr(getattr(response, 'usage', None), 'completion_tokens', None)}")
 
     append_message(user_id, "user", user_message)
     append_message(user_id, "assistant", assistant_reply)

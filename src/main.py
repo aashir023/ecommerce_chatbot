@@ -14,7 +14,6 @@ Run with:
   or
     uvicorn src.main:app --reload
 """
-import logging
 import time
 from fastapi import Request
 
@@ -28,7 +27,15 @@ from src.modules.service_visits.router import router as service_visits_router
 from src.modules.complaints.router import router as complaints_router
 from src.modules.chat.router import router as chat_router
 from pydantic import BaseModel
+from loguru import logger
 
+logger.remove()
+logger.add(
+    lambda msg: print(msg, end=""),
+    colorize=True,
+    level="DEBUG",
+    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <green>{level}</green> | <green>{message}</green>\n",
+)
 # ── App setup ─────────────────────────────────────────────────────────────────
 
 app = FastAPI(
@@ -36,12 +43,6 @@ app = FastAPI(
     description="AI-powered product assistant for japanelectronics.com.pk",
     version="1.0.1",
 )
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-req_logger = logging.getLogger("uvicorn.error")
-req_logger.setLevel(logging.INFO)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 # Allow all origins for development — tighten this in production
 app.add_middleware(
@@ -57,18 +58,6 @@ async def log_every_request(request: Request, call_next):
     start = time.time()
     response = await call_next(request)
     duration_ms = (time.time() - start) * 1000
-
-    if request.url.path in {"/health", "/chat"}:
-        user_id = getattr(request.state, "chat_user_id", None)
-
-        req_logger.info(
-            "[REQ] %s %s -> %s (%.1f ms) user_id=%s",
-            request.method,
-            request.url.path,
-            response.status_code,
-            duration_ms,
-            user_id,
-        )
 
     return response
 

@@ -3,14 +3,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# ── VLLM settings ─────────────────────────────────────────────────────────────
+VLLM_BASE_URL: str = os.getenv("VLLM_BASE_URL", "http://vllm:8000/v1")
+VLLM_API_KEY: str = os.getenv("VLLM_API_KEY", "local-key")
+
 # ── API Keys ──────────────────────────────────────────────────────────────────
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
 
 # ── OpenAI settings ───────────────────────────────────────────────────────────
 EMBEDDING_MODEL: str = "text-embedding-3-small"   # cheap + accurate
-CHAT_MODEL: str = "gpt-4o-mini"                   # fast + cheap for customer service
-EMBEDDING_DIMENSION: int = 1536                    # text-embedding-3-small output dim
+# CHAT_MODEL: str = "gpt-oss-20b"                   # fast + cheap for customer service
+# EMBEDDING_DIMENSION: int = 1536                    # text-embedding-3-small output dim
+
+CHAT_MODEL = "llama-3.1-8b-awq"
+EMBEDDING_DIMENSION: int = 1536
+
 
 # ── Pinecone settings ─────────────────────────────────────────────────────────
 PINECONE_INDEX_NAME: str = "ecommerce-chatbot"

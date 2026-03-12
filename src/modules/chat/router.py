@@ -1,4 +1,3 @@
-import logging
 from fastapi import APIRouter, HTTPException, Request
 from src.modules.chat.schemas import ChatRequest, ChatResponse, HistoryResponse
 from src.modules.chat.service import (
@@ -6,14 +5,13 @@ from src.modules.chat.service import (
     fetch_history,
     reset_history,
 )
-
+from loguru import logger
 router = APIRouter(prefix="/chat", tags=["Chat"])
-chat_logger = logging.getLogger("uvicorn.error")
 
 @router.post("", response_model=ChatResponse)
 def chat(request: ChatRequest, raw_request: Request):
     raw_request.state.chat_user_id = request.user_id
-    chat_logger.info("[CHAT_HIT] user_id=%s msg_len=%d message=%r", request.user_id, len(request.message), request.message)
+    logger.debug("User query: {}", request.message)
     try:
         result = send_message(
             user_id=request.user_id,
@@ -21,7 +19,9 @@ def chat(request: ChatRequest, raw_request: Request):
         )
         return ChatResponse(**result)
     except Exception as e:
+        logger.exception("Bot error")
         raise HTTPException(status_code=500, detail=f"Bot error: {str(e)}")
+
 
 
 @router.get("/history/{user_id}", response_model=HistoryResponse, tags=["Chat"])

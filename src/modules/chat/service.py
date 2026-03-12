@@ -12,7 +12,6 @@ from src.db.repositories.chat_repo import (
 from src.modules.rag.service import generate_answer, clear_history, openai_client
 from src.core.config import CHAT_MODEL
 
-
 def _detect_form_action(message: str) -> str | None:
     prompt = f"""You are an intent classifier for customer support chat.
 
